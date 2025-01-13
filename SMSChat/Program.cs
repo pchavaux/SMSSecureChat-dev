@@ -31,6 +31,10 @@ builder.Services.AddScoped <WebRtcService>();
 //    var apiBaseUrl = "https://voip.ms/api/v1/rest.php"; // Or retrieve from configuration
 //    return new VoipMsSmsService(httpClient, apiBaseUrl);
 //});
+builder.Services.AddScoped(sp => new HttpClient
+{
+    BaseAddress = new Uri("https://smssecurechat-fca6gafhhnd5dmcm.centralus-01.azurewebsites.net")
+});
 builder.Services.AddHttpClient();
 builder.Services.AddControllers();
  
