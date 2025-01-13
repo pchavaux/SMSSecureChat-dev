@@ -33,7 +33,7 @@ builder.Services.AddScoped <WebRtcService>();
 //});
 builder.Services.AddScoped(sp => new HttpClient
 {
-    BaseAddress = new Uri("https://smssecurechat-fca6gafhhnd5dmcm.centralus-01.azurewebsites.net")
+    BaseAddress = new Uri("https://smssecurechat-dev.azurewebsites.net/")
 });  //https://localhost:7008/
 builder.Services.AddHttpClient();
 builder.Services.AddControllers();
