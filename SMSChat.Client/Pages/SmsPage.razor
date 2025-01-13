@@ -3,7 +3,7 @@
 @using SMSChat.Models
 @inject ILogger<SmsPage> Logger
 @inject HttpClient Http
-@inject SmsService SmsService
+
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 <div class="container-fluid">
@@ -95,9 +95,9 @@
             if (currentUser.Identity != null && currentUser.Identity.IsAuthenticated)
             {
                 UserPhoneNumber = currentUser.FindFirst(c => c.Type == "phone_number")?.Value;
-
+                Logger.LogInformation("User Phone Number: "+UserPhoneNumber);
                 // Fetch friends via API
-                Friends = await Http.GetFromJsonAsync<List<Friend>>($"api/friends?phoneNumber={UserPhoneNumber}");
+               Friends = await Http.GetFromJsonAsync<List<Friend>>($"api/friends?phoneNumber={UserPhoneNumber}");
             }
         }
         catch (Exception ex)
@@ -105,7 +105,11 @@
             Logger.LogError("Error initializing page: {Message}", ex.Message);
         }
     }
-
+    // public async Task<IEnumerable<SmsMessage>> GetSmsMessagesAsync(string did)
+    // {
+    //     var response = await _httpClient.GetFromJsonAsync<IEnumerable<SmsMessage>>($"api/sms/messages?did={did}");
+    //     return response;
+    // }
     private async Task SendSms()
     {
         if (SelectedFriend == null || string.IsNullOrWhiteSpace(SmsText))
@@ -117,9 +121,10 @@
         try
         {
             // Send the SMS using the VoipMsSmsService
-            var success = await SmsService.SendSmsAsync(UserPhoneNumber, SelectedFriend.PhoneNumber, SmsText);
-
-            if (success)
+           // var success = await SmsService.SendSmsAsync(UserPhoneNumber, SelectedFriend.PhoneNumber, SmsText);
+            var request = new SmsRequest { Did = UserPhoneNumber, Dst = SelectedFriend.PhoneNumber, Message = SmsText };
+            var response = await Http.PostAsJsonAsync("api/sms/send", request);
+            if (response !=null)
             {
                 Logger.LogInformation("SMS sent successfully to {PhoneNumber}.", SelectedFriend.PhoneNumber);
                 SmsText = string.Empty;
@@ -152,6 +157,11 @@
         if (SelectedFriend == null) return;
 
         SelectedMessages = await Http.GetFromJsonAsync<IEnumerable<SmsMessage>>($"api/messages?from={UserPhoneNumber}&to={RecipientNumber}");
+        
+    {
+            var response = await Http.GetFromJsonAsync<IEnumerable<SmsMessage>>($"api/sms/messages?did={UserPhoneNumber}");
+        
+    }
         StateHasChanged();
     }
 

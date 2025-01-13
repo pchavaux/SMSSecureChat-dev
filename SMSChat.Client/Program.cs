@@ -13,6 +13,8 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSingleton<AuthenticationStateProvider, PersistentAuthenticationStateProvider>();
 builder.Services.AddScoped<WebRtcService>();
 builder.Services.AddScoped<SmsService>();
+//builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7008") });
 //string bearerToken = "S0hCVVhjY25WS3dUUTRuL0hLT0tEUUVkMnczWTFJSW8vamtNMWhlcXN6TT0="; // Retrieve this securely
 
 //builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://voip.ms/api/v1/rest.php") });

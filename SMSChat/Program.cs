@@ -16,7 +16,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 builder.Services.AddSignalR();
-builder.Services.AddScoped<SMSChat.Client.WebRtc.WebRtcService>();
+//builder.Services.AddScoped<SMSChat.Client.WebRtc.WebRtcService>();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
@@ -25,15 +25,15 @@ builder.Services.AddScoped <WebRtcService>();
 //builder.Services.AddScoped<SmsService>();
 //builder.Services.Configure<VoipMsSmsOptions>(builder.Configuration.GetSection("VoipMsSms"));
 //builder.Services.AddScoped<VoipMsSmsService>();
-builder.Services.AddScoped<VoipMsSmsService>(sp =>
-{
-    var httpClient = sp.GetRequiredService<HttpClient>();
-    var apiBaseUrl = "https://voip.ms/api/v1/rest.php"; // Or retrieve from configuration
-    return new VoipMsSmsService(httpClient, apiBaseUrl);
-});
+//builder.Services.AddScoped<VoipMsSmsService>(sp =>
+//{
+//    var httpClient = sp.GetRequiredService<HttpClient>();
+//    var apiBaseUrl = "https://voip.ms/api/v1/rest.php"; // Or retrieve from configuration
+//    return new VoipMsSmsService(httpClient, apiBaseUrl);
+//});
 builder.Services.AddHttpClient();
-
-
+builder.Services.AddControllers();
+ 
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = IdentityConstants.ApplicationScheme;
@@ -72,7 +72,7 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
-
+app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
