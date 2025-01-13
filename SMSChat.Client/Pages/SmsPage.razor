@@ -1,0 +1,224 @@
+﻿@page "/sms"
+@using SMSChat.Client.Services
+@using SMSChat.Models
+@inject ILogger<SmsPage> Logger
+@inject HttpClient Http
+@inject SmsService SmsService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-sm-12 bg-light border-end" style="min-height: 100vh;">
+            <h4 class="mt-3">Friends List</h4>
+            <ul class="list-group">
+                @foreach (var friend in Friends)
+                {
+                    <li class="list-group-item list-group-item-action" style="cursor: pointer;" @ondblclick="DoubleClick" @onclick="(() => SelectFriend(friend))">
+                        <strong>@friend.Name</strong><br />
+                        <small>@friend.PhoneNumber</small>
+                    </li>
+                }
+            </ul>
+            <div class="mt-4">
+                <h5>@AddOrEdit</h5>
+                <input class="form-control mb-2" placeholder="Name" @bind="NewFriendName" />
+                <input class="form-control mb-2" placeholder="Phone Number" @bind="NewFriendPhone" />
+                <button class="btn btn-primary w-100" @onclick="SaveFriend">Save</button>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="col-md-9 col-sm-6">
+            <div class="p-3">
+                <h3>My SMS number is @FormatPhone(UserPhoneNumber)</h3>
+                <div class="border rounded bg-light p-3 mb-3" style="height: 400px; overflow-y: auto; display: flex; flex-direction: column-reverse;">
+                    @if (SelectedFriend == null)
+                    {
+                        <p>Select a friend to view messages.</p>
+                    }
+                    else if (SelectedMessages == null || !SelectedMessages.Any())
+                    {
+                        <p>No messages available.</p>
+                    }
+                    else
+                    {
+                        @foreach (var message in SelectedMessages.OrderBy(m => m.Date))
+                        {
+                            <div class="mb-2">
+                                @if (message.Type == "0")
+                                {
+                                    <div class="text-end text-danger">
+                                        <span style="font-size: 12px;">[@UserPhoneNumber] @FormatDate(message.Date)</span><br />
+                                        @message.Message
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-start text-secondary">
+                                        <span style="font-size: 12px;">[@RecipientNumber] @FormatDate(message.Date)</span><br />
+                                        @message.Message
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+
+                <div>
+                    <input class="form-control mb-2" placeholder="Type a message..." @bind="SmsText" />
+                    <button class="btn btn-primary" @onclick="SendSms">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string RecipientNumber;
+    private string SmsText;
+    private string UserPhoneNumber;
+    private string AddOrEdit = "Add/Edit Friend";
+    private string NewFriendName;
+    private string NewFriendPhone;
+    private List<Friend> Friends = new();
+    private Friend SelectedFriend;
+    private IEnumerable<SmsMessage> SelectedMessages;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var currentUser = authState.User;
+
+            if (currentUser.Identity != null && currentUser.Identity.IsAuthenticated)
+            {
+                UserPhoneNumber = currentUser.FindFirst(c => c.Type == "phone_number")?.Value;
+
+                // Fetch friends via API
+                Friends = await Http.GetFromJsonAsync<List<Friend>>($"api/friends?phoneNumber={UserPhoneNumber}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("Error initializing page: {Message}", ex.Message);
+        }
+    }
+
+    private async Task SendSms()
+    {
+        if (SelectedFriend == null || string.IsNullOrWhiteSpace(SmsText))
+        {
+            Logger.LogWarning("No friend selected or message text is empty.");
+            return;
+        }
+
+        try
+        {
+            // Send the SMS using the VoipMsSmsService
+            var success = await SmsService.SendSmsAsync(UserPhoneNumber, SelectedFriend.PhoneNumber, SmsText);
+
+            if (success)
+            {
+                Logger.LogInformation("SMS sent successfully to {PhoneNumber}.", SelectedFriend.PhoneNumber);
+                SmsText = string.Empty;
+                await LoadMessages();
+            }
+            else
+            {
+                Logger.LogError("Failed to send SMS to {PhoneNumber}.", SelectedFriend.PhoneNumber);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "An error occurred while sending SMS.");
+        }
+    }
+
+
+    private void SelectFriend(Friend friend)
+    {
+        SelectedFriend = friend;
+        RecipientNumber = friend.PhoneNumber;
+        AddOrEdit = "Edit Friend";
+        NewFriendName = friend.Name;
+        NewFriendPhone = friend.PhoneNumber;
+        LoadMessages();
+    }
+
+    private async Task LoadMessages()
+    {
+        if (SelectedFriend == null) return;
+
+        SelectedMessages = await Http.GetFromJsonAsync<IEnumerable<SmsMessage>>($"api/messages?from={UserPhoneNumber}&to={RecipientNumber}");
+        StateHasChanged();
+    }
+
+    private async Task SaveFriend()
+    {
+        if (string.IsNullOrWhiteSpace(NewFriendName) || string.IsNullOrWhiteSpace(NewFriendPhone)) return;
+
+        if (SelectedFriend == null)
+        {
+            var newFriend = new Friend
+                {
+                    Name = NewFriendName,
+                    PhoneNumber = NewFriendPhone,
+                    FriendSipPhoneNumber = UserPhoneNumber
+                };
+
+            var response = await Http.PostAsJsonAsync("api/friends", newFriend);
+            if (response.IsSuccessStatusCode)
+            {
+                Friends.Add(newFriend);
+            }
+        }
+        else
+        {
+            SelectedFriend.Name = NewFriendName;
+            SelectedFriend.PhoneNumber = NewFriendPhone;
+
+            var response = await Http.PutAsJsonAsync($"api/friends/{SelectedFriend.Id}", SelectedFriend);
+            if (response.IsSuccessStatusCode)
+            {
+                // Update friend locally
+            }
+        }
+
+        ClearFields();
+        AddOrEdit = "Add/Edit Friend";
+        StateHasChanged();
+    }
+
+    private void ClearFields()
+    {
+        NewFriendName = string.Empty;
+        NewFriendPhone = string.Empty;
+        SelectedFriend = null;
+    }
+
+    private string FormatDate(string dateString)
+    {
+        if (DateTime.TryParse(dateString, out var date))
+        {
+            return date.ToString("MM/dd HH:mm");
+        }
+        return dateString;
+    }
+
+    private string FormatPhone(string phoneString)
+    {
+        if (!string.IsNullOrWhiteSpace(phoneString) && phoneString.Length == 10 && long.TryParse(phoneString, out _))
+        {
+            return $"({phoneString.Substring(0, 3)}) {phoneString.Substring(3, 3)}-{phoneString.Substring(6)}";
+        }
+        return phoneString;
+    }
+
+    public void DoubleClick()
+    {
+        AddOrEdit = "Add Friend";
+        ClearFields();
+    }
+}
