@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy ASP.Net Core app to Azure Web App - SMSSecureChat-dev
+name: Build and deploy ASP.Net Core app to Azure Web App - SMSecureChat-dev
 
 on:
   push:
@@ -12,6 +12,9 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ./SMSChat
 
     steps:
       - uses: actions/checkout@v4
@@ -51,15 +54,15 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_3E47A862CDC34C3496CF6D537F06A597 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6271B7260D964DF1B88DCED01408E22C }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_7035DCD223F546DEB50F460DC94718D8 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_A6D4E4C10ED24C029BF2826507DE526F }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_399C62F0F2A2479D85B1570B28C8A741 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E17F4D7A67454C68AB2C1386BC383D1D }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'SMSSecureChat-dev'
+          app-name: 'SMSecureChat-dev'
           slot-name: 'Production'
           package: .
           
