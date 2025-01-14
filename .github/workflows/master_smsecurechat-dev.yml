@@ -14,7 +14,7 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        working-directory: ./SMSChat.Client
+        working-directory: ./SMSChat
 
     steps:
       - uses: actions/checkout@v4
