@@ -9,6 +9,7 @@ using SMSChat.Components;
 using SMSChat.Components.Account;
 using SMSChat.Data;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
