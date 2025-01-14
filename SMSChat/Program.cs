@@ -1,4 +1,5 @@
 using JailTalkv1.Hubs;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -31,10 +32,15 @@ builder.Services.AddScoped <WebRtcService>();
 //    var apiBaseUrl = "https://voip.ms/api/v1/rest.php"; // Or retrieve from configuration
 //    return new VoipMsSmsService(httpClient, apiBaseUrl);
 //});
-builder.Services.AddScoped(sp => new HttpClient
+builder.Services.AddScoped(sp =>
 {
-    BaseAddress = new Uri("https://smssecurechat-dev.azurewebsites.net")
-});  //https://localhost:7008/
+    var navigationManager = sp.GetRequiredService<NavigationManager>();
+
+    return new HttpClient()
+    {
+        BaseAddress = new Uri(navigationManager.BaseUri)
+    };
+});
 builder.Services.AddHttpClient();
 builder.Services.AddControllers();
  
